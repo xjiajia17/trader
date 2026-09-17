@@ -33,9 +33,11 @@ const DataManager = (function() {
     let useMockData = false;
 
     // 本地数据服务地址（tools/data_service.py）。未启动时自动降级到静态文件。
+    // 仅在 localhost 环境下尝试连接本地服务，线上部署直接走静态文件。
     const SERVICE_URL = 'http://127.0.0.1:8090';
-    // 长期历史接入后 /api/all 的响应可能有好几 MB，超时要放宽
-    const SERVICE_TIMEOUT_MS = 15000;
+    const IS_LOCAL = ['localhost', '127.0.0.1', '0.0.0.0'].includes(location.hostname);
+    // 线上环境跳过本地服务，避免 15 秒等待；本地环境超时缩短到 3 秒
+    const SERVICE_TIMEOUT_MS = IS_LOCAL ? 3000 : 1;
     const INFO_TIMEOUT_MS = 2500;
 
     // 数据来源与元信息
@@ -366,12 +368,14 @@ const DataManager = (function() {
         lastDataSignature = '';
         dataSource = 'unknown';
 
-        // 1) 本地数据服务
-        const svc = await fetchService(symbol);
-        if (svc && applyServicePayload(svc)) {
-            dataSource = 'service';
-            logSummary('本地数据服务');
-            return true;
+        // 1) 本地数据服务（仅 localhost 环境尝试）
+        if (IS_LOCAL) {
+            const svc = await fetchService(symbol);
+            if (svc && applyServicePayload(svc)) {
+                dataSource = 'service';
+                logSummary('本地数据服务');
+                return true;
+            }
         }
 
         // 2) 静态文件
@@ -439,6 +443,7 @@ const DataManager = (function() {
      * @returns {boolean} 数据是否有变化
      */
     async function refreshFromService() {
+        if (!IS_LOCAL) return false;  // 线上环境无本地服务
         // 先问一次轻量元信息：服务端数据没变就不拉几 MB 的全量数据
         const info = await fetchInfo(currentSymbol);
         if (info && dataMeta && info.count === dataMeta.count && info.lastTime === dataMeta.lastTime) {
