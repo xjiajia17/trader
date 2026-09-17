@@ -853,6 +853,32 @@ const ChartManager = (function() {
         return visibleBarCount > 0 ? currentData[visibleBarCount - 1] : null;
     }
 
+    /**
+     * 获取当前图表可见区域最右端对应的K线索引（预览模式下用作回放起点）
+     */
+    function getRightmostVisibleIndex() {
+        if (!mainChart || currentData.length === 0) return 0;
+        const range = mainChart.timeScale().getVisibleLogicalRange();
+        if (!range) return currentData.length - 1;
+        let idx = Math.round(range.to);
+        if (idx < 0) idx = 0;
+        if (idx >= currentData.length) idx = currentData.length - 1;
+        return idx;
+    }
+
+    /**
+     * 根据鼠标X坐标（相对图表容器）返回对应的K线索引
+     */
+    function getIndexAtX(x) {
+        if (!mainChart || currentData.length === 0) return 0;
+        const logical = xToLogical(x);
+        if (logical === null || logical === undefined || !isFinite(logical)) return 0;
+        let idx = Math.round(logical);
+        if (idx < 0) idx = 0;
+        if (idx >= currentData.length) idx = currentData.length - 1;
+        return idx;
+    }
+
     function subscribeCrosshair(callback) {
         if (mainChart && candlestickSeries) {
             mainChart.subscribeCrosshairMove(param => {
@@ -961,6 +987,7 @@ const ChartManager = (function() {
         setStochParams, getStochParams,
         scrollToEnd, fitContent,
         getVisibleBarCount, getCurrentData, getLatestBar,
+        getRightmostVisibleIndex, getIndexAtX,
         subscribeCrosshair, priceToY, yToPrice,
         timeToX, xToTime, logicalToX, xToLogical, getMainChartEl,
         debugPriceScale,

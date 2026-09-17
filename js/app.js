@@ -21,6 +21,8 @@ const App = (function() {
     let isReady = false;
     let replayMode = false; // 是否处于回放模式
     let replayStartIndex = 0; // 回放起始位置
+    let lastLoadTime = 0; // 最近一次 loadData 的时间戳（用于区分初始加载和用户拖动）
+    let ctxReplayIndex = 0; // 右键菜单中记录的回放起点K线索引
 
     let dom = {};
     let quickTpSlEl = null;
@@ -100,6 +102,18 @@ const App = (function() {
         ChartManager.onRangeChange(() => {
             const pos = TradingManager.getPosition();
             if (pos) updatePositionLabels();
+
+            // 预览模式下：拖动图表时自动把可见区域最右K线作为回放起点
+            if (!replayMode && Date.now() - lastLoadTime > 800) {
+                const idx = ChartManager.getRightmostVisibleIndex();
+                const total = ReplayManager.getTotalBars();
+                if (idx > 0 && idx < total) {
+                    replayStartIndex = idx;
+                    dom.progressBar.value = Math.floor(idx / total * 100);
+                    dom.progressText.textContent = `起始: ${idx} / ${total}（拖动图表或右键选择）`;
+                    ChartManager.markStartPosition(idx);
+                }
+            }
         });
 
         dom.symbolSelect.disabled = true;
@@ -712,7 +726,9 @@ const App = (function() {
     function loadData(timeframe) {
         const data = DataManager.getData(timeframe);
         replayMode = false;
-        replayStartIndex = 0;
+        // 默认从数据的 70% 处开始回放（用户可拖动图表或右键调整）
+        replayStartIndex = Math.floor(data.length * 0.7);
+        lastLoadTime = Date.now();
 
         // 展示全量K线
         ChartManager.setData(data);
@@ -732,8 +748,14 @@ const App = (function() {
         // 更新UI为预览模式
         dom.playBtn.textContent = '▶';
         dom.playBtn.title = '开始回放';
-        dom.progressText.textContent = `预览模式 — 拖动进度条选择起始位置`;
-        dom.progressBar.value = 0;
+        const total = data.length;
+        dom.progressText.textContent = `起始: ${replayStartIndex} / ${total}（拖动图表或右键选择）`;
+        dom.progressBar.value = Math.floor(replayStartIndex / total * 100);
+
+        // 显示默认起点标记线
+        if (replayStartIndex > 0 && replayStartIndex < total) {
+            ChartManager.markStartPosition(replayStartIndex);
+        }
 
         // 显示最后一根K线的信息
         if (data.length > 0) {
@@ -1181,14 +1203,26 @@ const App = (function() {
                 showNotification('已删除该画线', 'info');
                 return;
             }
+
             if (!replayMode) {
-                showNotification('请先开始回放再交易', 'warning');
-                return;
+                // 预览模式：右键只显示"从这里开始回放"
+                const x = e.clientX - rect.left;
+                ctxReplayIndex = ChartManager.getIndexAtX(x);
+                const total = ReplayManager.getTotalBars();
+                dom.ctxPrice.textContent = `从第 ${ctxReplayIndex} 根 / 共 ${total} 根 开始回放`;
+                // 切换菜单内容：只显示回放项
+                dom.ctxMenu.querySelectorAll('.ctx-trade-item, .ctx-trade-divider').forEach(el => el.style.display = 'none');
+                dom.ctxMenu.querySelectorAll('.ctx-replay-item, .ctx-replay-divider').forEach(el => el.style.display = '');
+            } else {
+                // 回放模式：显示交易菜单
+                const price = ChartManager.yToPrice(e.clientY - rect.top);
+                if (price === null || !(price > 0)) return;
+                ctxPriceValue = price;
+                dom.ctxPrice.textContent = `价格 ${formatPrice(price)}`;
+                // 切换菜单内容：只显示交易项
+                dom.ctxMenu.querySelectorAll('.ctx-trade-item, .ctx-trade-divider').forEach(el => el.style.display = '');
+                dom.ctxMenu.querySelectorAll('.ctx-replay-item, .ctx-replay-divider').forEach(el => el.style.display = 'none');
             }
-            const price = ChartManager.yToPrice(e.clientY - rect.top);
-            if (price === null || !(price > 0)) return;
-            ctxPriceValue = price;
-            dom.ctxPrice.textContent = `价格 ${formatPrice(price)}`;
 
             // 定位菜单（防止超出右/下边界）
             dom.ctxMenu.style.display = 'block';
@@ -1227,6 +1261,13 @@ const App = (function() {
      * 处理右键菜单动作
      */
     function handleCtxAction(action, price) {
+        // 预览模式：从右键位置开始回放
+        if (action === 'replay-from-here') {
+            replayStartIndex = ctxReplayIndex;
+            startReplay(true);
+            return;
+        }
+
         const slPercent = parseFloat(dom.stopLossPercent.value);
         const tpPercent = parseFloat(dom.takeProfitPercent.value);
         const sl = isNaN(slPercent) ? null : slPercent;

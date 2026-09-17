@@ -380,13 +380,15 @@
     <!-- 图表右键菜单 -->
     <div id="chartContextMenu" class="ctx-menu" style="display:none;">
         <div class="ctx-price" id="ctxPrice">--</div>
-        <button class="ctx-item" data-action="buy">市价买入 / 做多</button>
-        <button class="ctx-item" data-action="sell">市价卖出 / 做空</button>
-        <div class="ctx-divider"></div>
-        <button class="ctx-item" data-action="limit-long">在此价挂限价·多</button>
-        <button class="ctx-item" data-action="limit-short">在此价挂限价·空</button>
-        <button class="ctx-item" data-action="stop-long">在此价挂止损·多</button>
-        <button class="ctx-item" data-action="stop-short">在此价挂止损·空</button>
+        <button class="ctx-item ctx-replay-item" data-action="replay-from-here">▶ 从这里开始回放</button>
+        <div class="ctx-divider ctx-replay-divider"></div>
+        <button class="ctx-item ctx-trade-item" data-action="buy">市价买入 / 做多</button>
+        <button class="ctx-item ctx-trade-item" data-action="sell">市价卖出 / 做空</button>
+        <div class="ctx-divider ctx-trade-divider"></div>
+        <button class="ctx-item ctx-trade-item" data-action="limit-long">在此价挂限价·多</button>
+        <button class="ctx-item ctx-trade-item" data-action="limit-short">在此价挂限价·空</button>
+        <button class="ctx-item ctx-trade-item" data-action="stop-long">在此价挂止损·多</button>
+        <button class="ctx-item ctx-trade-item" data-action="stop-short">在此价挂止损·空</button>
     </div>
 
     <!-- 脚本文件 -->
