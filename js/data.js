@@ -47,6 +47,48 @@ const DataManager = (function() {
     let autoRefreshCallback = null;
 
     /**
+     * 过滤休市时段的"冻结K线"
+     * TwelveData 等数据源在市场休市期间会返回 OHLC 几乎相同的K线（价格冻结），
+     * 这些K线不是真实交易，在图表上表现为一条水平线，干扰分析。
+     * 检测连续的低波动K线段并移除。
+     */
+    function filterDeadBars(bars) {
+        if (!bars || bars.length < 30) return bars;
+
+        // 用全数据中位数range作为正常波动的参考
+        const ranges = bars.map(b => b.high - b.low).sort((a, b) => a - b);
+        const medianRange = ranges[Math.floor(ranges.length / 2)];
+        if (!(medianRange > 0)) return bars;
+
+        // 冻结阈值：低于中位数range的15%，且绝对值也很小
+        // （防止极端行情中正常K线被误删）
+        const deadThreshold = Math.max(medianRange * 0.15, 0.0001);
+        const MIN_DEAD_STREAK = 8; // 连续8根（40分钟）以上才算休市
+
+        const result = [];
+        let i = 0;
+        while (i < bars.length) {
+            const r = bars[i].high - bars[i].low;
+            if (r < deadThreshold) {
+                // 找到连续的冻结段
+                let j = i;
+                while (j < bars.length && (bars[j].high - bars[j].low) < deadThreshold) {
+                    j++;
+                }
+                const streak = j - i;
+                if (streak >= MIN_DEAD_STREAK) {
+                    // 跳过整段冻结K线，保留前后正常K线
+                    i = j;
+                    continue;
+                }
+            }
+            result.push(bars[i]);
+            i++;
+        }
+        return result;
+    }
+
+    /**
      * 将金十JSON数据解析为lightweight-charts格式
      * 金十返回的OHLC是字符串，需要转为数字
      */
@@ -72,7 +114,7 @@ const DataManager = (function() {
         }
 
         bars.sort((a, b) => a.time - b.time);
-        return bars;
+        return filterDeadBars(bars);
     }
 
     /**
@@ -341,8 +383,10 @@ const DataManager = (function() {
         const tfs = {};
         let total = 0;
         for (const tf of Object.keys(TIMEFRAME_MAP)) {
-            const bars = payload.timeframes[tf];
+            let bars = payload.timeframes[tf];
             if (Array.isArray(bars) && bars.length > 0) {
+                // 服务端数据可能是 {time,open,high,low,close,volume} 数组，统一过滤冻结K线
+                bars = filterDeadBars(bars);
                 tfs[tf] = bars;
                 total += bars.length;
             }
