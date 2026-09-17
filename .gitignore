@@ -1,0 +1,24 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ===== 系统 / 编辑器 =====
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# ===== 运行时产物 =====
+*.log
+nohup.out
+data/store/_quota.json
+
+# ===== 本地敏感配置（API Key 请用环境变量 TWELVEDATA_KEY 传入）=====
+.env
+.env.local
+*.secret
+tools/secret.local.json

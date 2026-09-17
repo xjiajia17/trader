@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K线回放 - 模拟交易练习</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/lib/lightweight-charts.js"></script>
+</head>
+<body>
+    <!-- 顶部工具栏 -->
+    <header class="toolbar">
+        <div class="toolbar-left">
+            <div class="logo">
+                <span class="logo-icon">📈</span>
+                <span class="logo-text">K线回放训练</span>
+            </div>
+            <div class="divider"></div>
+            <!-- 品种选择 -->
+            <div class="toolbar-group">
+                <label class="toolbar-label">品种</label>
+                <select id="symbolSelect" class="toolbar-select">
+                    <option value="XAUUSD">现货黄金</option>
+                    <option value="USOIL">WTI原油</option>
+                    <option value="USDJPY">美元/日元</option>
+                    <option value="EURUSD">欧元/美元</option>
+                </select>
+            </div>
+            <!-- 周期切换 -->
+            <div class="toolbar-group">
+                <label class="toolbar-label">周期</label>
+                <div class="timeframe-buttons">
+                    <button class="tf-btn active" data-tf="1m">1m</button>
+                    <button class="tf-btn" data-tf="5m">5m</button>
+                    <button class="tf-btn" data-tf="15m">15m</button>
+                    <button class="tf-btn" data-tf="30m">30m</button>
+                    <button class="tf-btn" data-tf="1h">1h</button>
+                    <button class="tf-btn" data-tf="4h">4h</button>
+                    <button class="tf-btn" data-tf="1d" title="日线（长期历史，新浪外盘约20年）">1d</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="toolbar-center">
+            <!-- 回放控制 -->
+            <div class="replay-controls">
+                <button id="resetBtn" class="ctrl-btn" title="退出回放返回预览">⟲</button>
+                <button id="prevBarBtn" class="ctrl-btn" title="上一根K线">⏪</button>
+                <button id="playBtn" class="ctrl-btn play-btn" title="播放/暂停">▶</button>
+                <button id="nextBarBtn" class="ctrl-btn" title="下一根K线">⏩</button>
+            </div>
+            <!-- 弹出间隔选择 -->
+            <div class="speed-controls">
+                <button class="speed-btn active" data-interval="500">0.5s</button>
+                <button class="speed-btn" data-interval="1000">1s</button>
+                <button class="speed-btn" data-interval="2000">2s</button>
+                <button class="speed-btn" data-interval="3000">3s</button>
+                <button class="speed-btn" data-interval="5000">5s</button>
+            </div>
+            <!-- 跟随最新K线开关 -->
+            <button id="followBtn" class="ctrl-btn follow-btn active" title="跟随最新K线（拖动图表后自动关闭，点击重新跟随）">⇥</button>
+            <!-- 画图工具栏 -->
+            <div class="divider"></div>
+            <div class="draw-tools">
+                <button class="draw-btn active" data-tool="cursor" title="选择/移动">➤</button>
+                <button class="draw-btn" data-tool="trendline" title="趋势线（点两个点）">╱</button>
+                <button class="draw-btn" data-tool="hline" title="水平线">―</button>
+                <button class="draw-btn" data-tool="vline" title="垂直线">|</button>
+                <button class="draw-btn" data-tool="rect" title="矩形（拖框）">▭</button>
+                <button class="draw-btn" data-tool="fib" title="斐波那契回撤（从高点拖到低点或反之）">φ</button>
+                <button class="draw-btn" id="drawDeleteBtn" title="删除选中的线">✕</button>
+                <button class="draw-btn" id="drawClearBtn" title="清空所有画线">🗑</button>
+            </div>
+        </div>
+
+        <div class="toolbar-right">
+            <!-- 均线开关 -->
+            <div class="toolbar-group">
+                <label class="toolbar-label">均线</label>
+                <div class="ma-toggles">
+                    <label class="ma-toggle">
+                        <input type="checkbox" id="ma5Toggle">
+                        <span class="ma-label" style="color: #f5a623;">EMA5</span>
+                    </label>
+                    <label class="ma-toggle">
+                        <input type="checkbox" id="ma10Toggle">
+                        <span class="ma-label" style="color: #e91e63;">EMA10</span>
+                    </label>
+                    <label class="ma-toggle">
+                        <input type="checkbox" id="ma20Toggle" checked>
+                        <span class="ma-label" style="color: #9c27b0;">EMA20</span>
+                    </label>
+                    <label class="ma-toggle">
+                        <input type="checkbox" id="ma60Toggle">
+                        <span class="ma-label" style="color: #00bcd4;">EMA60</span>
+                    </label>
+                </div>
+            </div>
+            <!-- Stochastic 参数 -->
+            <div class="toolbar-group">
+                <label class="toolbar-label">Stoch</label>
+                <div class="kdj-params">
+                    <input type="number" id="kdjN" value="14" min="1" max="100" title="%K周期">
+                    <span class="kdj-sep">,</span>
+                    <input type="number" id="kdjM1" value="3" min="1" max="100" title="%D周期">
+                </div>
+            </div>
+            <!-- 点差显示 -->
+            <div class="toolbar-group">
+                <label class="toolbar-label">点差</label>
+                <span class="spread-display" id="spreadDisplay">--</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main-container">
+        <!-- 左侧图表区域 -->
+        <section class="chart-section">
+            <div id="mainChart" class="chart-container">
+                <!-- 持仓价格标签层（入场/止损/止盈，定位在图表左侧，不遮挡右侧价格轴） -->
+                <div id="positionLabels" class="position-labels" style="display:none;">
+                    <div id="entryTag" class="pl-tag entry-tag">入场</div>
+                    <button id="quickSlBtn" class="pl-tag sl-tag" title="拖动设置止损，点击切换开关">SL</button>
+                    <button id="quickTpBtn" class="pl-tag tp-tag" title="拖动设置止盈，点击切换开关">TP</button>
+                </div>
+            </div>
+            <div id="volumeChart" class="volume-container"></div>
+        </section>
+
+        <!-- 右侧面板 -->
+        <aside class="side-panel">
+            <!-- 账户信息 -->
+            <div class="panel account-panel">
+                <div class="panel-header">
+                    <span class="panel-title">账户</span>
+                </div>
+                <div class="panel-body">
+                    <div class="account-row">
+                        <span class="account-label">账户余额</span>
+                        <span class="account-value" id="balanceValue">$10,000.00</span>
+                    </div>
+                    <div class="account-row">
+                        <span class="account-label">可用保证金</span>
+                        <span class="account-value" id="availableMargin">$10,000.00</span>
+                    </div>
+                    <div class="account-row">
+                        <span class="account-label">已用保证金</span>
+                        <span class="account-value" id="usedMargin">$0.00</span>
+                    </div>
+                    <div class="account-row highlight">
+                        <span class="account-label">总盈亏</span>
+                        <span class="account-value" id="totalPnL">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 交易面板 -->
+            <div class="panel trade-panel">
+                <div class="panel-header">
+                    <span class="panel-title">交易</span>
+                    <span class="panel-badge" id="positionBadge">无持仓</span>
+                </div>
+                <div class="panel-body">
+                    <!-- 当前价格 + 买卖价 -->
+                    <div class="current-price">
+                        <div class="price-row">
+                            <span class="price-label">当前价格</span>
+                            <span class="price-value" id="currentPrice">--</span>
+                        </div>
+                        <div class="bid-ask-row">
+                            <span class="bid-label">卖价 Ask</span>
+                            <span class="bid-value" id="askPrice">--</span>
+                            <span class="ask-label">买价 Bid</span>
+                            <span class="ask-value" id="bidPrice">--</span>
+                        </div>
+                    </div>
+
+                    <!-- 仓位信息 -->
+                    <div class="position-info" id="positionInfo" style="display: none;">
+                        <div class="position-row">
+                            <span class="position-label">方向</span>
+                            <span class="position-value" id="positionSide">--</span>
+                        </div>
+                        <div class="position-row">
+                            <span class="position-label">入场价</span>
+                            <span class="position-value" id="entryPrice">--</span>
+                        </div>
+                        <div class="position-row">
+                            <span class="position-label">数量</span>
+                            <span class="position-value" id="positionSize">--</span>
+                        </div>
+                        <div class="position-row">
+                            <span class="position-label">止损</span>
+                            <span class="position-value editable" id="stopLossPrice">--</span>
+                        </div>
+                        <div class="position-row">
+                            <span class="position-label">止盈</span>
+                            <span class="position-value editable" id="takeProfitPrice">--</span>
+                        </div>
+                        <div class="position-row pnl-row">
+                            <span class="position-label">浮动盈亏</span>
+                            <span class="position-value pnl-value" id="floatingPnL">$0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- 交易输入 -->
+                    <div class="trade-inputs">
+                        <!-- 数量模式切换：手数 / 金额 -->
+                        <div class="input-group">
+                            <div class="size-mode-toggle">
+                                <button class="size-mode-btn active" data-mode="lots">手数 (lots)</button>
+                                <button class="size-mode-btn" data-mode="amount">金额 (USD)</button>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label id="sizeLabel">手数</label>
+                            <input type="number" id="tradeAmount" value="0.10" min="0.01" step="0.01">
+                            <span class="input-hint" id="sizeHint">≈ 名义价值 --</span>
+                        </div>
+                        <div class="input-group">
+                            <label>杠杆</label>
+                            <select id="leverageSelect">
+                                <option value="1">1x</option>
+                                <option value="10">10x</option>
+                                <option value="50">50x</option>
+                                <option value="100" selected>100x</option>
+                                <option value="200">200x</option>
+                                <option value="500">500x</option>
+                                <option value="1000">1000x</option>
+                            </select>
+                        </div>
+                        <div class="input-group inline">
+                            <div class="input-half">
+                                <label>止损 (%)</label>
+                                <input type="number" id="stopLossPercent" value="" placeholder="可选" min="0.1" step="0.1">
+                            </div>
+                            <div class="input-half">
+                                <label>止盈 (%)</label>
+                                <input type="number" id="takeProfitPercent" value="" placeholder="可选" min="0.1" step="0.1">
+                            </div>
+                        </div>
+                        <!-- 挂单输入 -->
+                        <div class="input-group" id="pendingOrderGroup" style="display:none;">
+                            <label>挂单价格</label>
+                            <input type="number" id="pendingPrice" value="" placeholder="触发价格" step="0.01">
+                        </div>
+                    </div>
+
+                    <!-- 订单类型切换 -->
+                    <div class="order-type-tabs">
+                        <button class="order-tab active" data-type="market">市价</button>
+                        <button class="order-tab" data-type="limit">限价</button>
+                        <button class="order-tab" data-type="stop">止损</button>
+                    </div>
+
+                    <!-- 交易按钮 -->
+                    <div class="trade-buttons">
+                        <button id="buyBtn" class="trade-btn buy-btn">买入 / 做多</button>
+                        <button id="sellBtn" class="trade-btn sell-btn">卖出 / 做空</button>
+                        <button id="closeBtn" class="trade-btn close-btn" style="display: none;">平仓</button>
+                    </div>
+
+                    <!-- 挂单列表 -->
+                    <div class="pending-orders" id="pendingOrdersPanel" style="display:none;">
+                        <div class="pending-header">挂单列表</div>
+                        <div id="pendingOrdersList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 统计面板 -->
+            <div class="panel stats-panel">
+                <div class="panel-header">
+                    <span class="panel-title">统计</span>
+                </div>
+                <div class="panel-body">
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">总交易</span>
+                            <span class="stat-value" id="totalTrades">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">胜率</span>
+                            <span class="stat-value" id="winRate">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">盈亏比</span>
+                            <span class="stat-value" id="profitFactor">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">最大回撤</span>
+                            <span class="stat-value" id="maxDrawdown">0%</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">最大连胜</span>
+                            <span class="stat-value" id="maxWinStreak">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">最大连败</span>
+                            <span class="stat-value" id="maxLoseStreak">0</span>
+                        </div>
+                    </div>
+                    <!-- 收益曲线小图 -->
+                    <div class="equity-chart-container">
+                        <div class="equity-chart-label">收益曲线</div>
+                        <div id="equityChart" class="equity-chart"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 交易历史 -->
+            <div class="panel history-panel">
+                <div class="panel-header">
+                    <span class="panel-title">交易历史</span>
+                    <span class="panel-badge" id="historyCount">0 笔</span>
+                </div>
+                <div class="panel-body history-body">
+                    <div class="history-table">
+                        <div class="history-header">
+                            <span>时间</span>
+                            <span>方向</span>
+                            <span>入场</span>
+                            <span>出场</span>
+                            <span>盈亏</span>
+                        </div>
+                        <div class="history-list" id="historyList">
+                            <div class="history-empty">暂无交易记录</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- 底部状态栏 -->
+    <footer class="statusbar">
+        <div class="status-left">
+            <span class="status-item">
+                <span class="status-label">时间:</span>
+                <span class="status-value" id="currentTime">--</span>
+            </span>
+            <span class="status-item">
+                <span class="status-label">进度:</span>
+                <span class="status-value" id="progressText">0 / 0</span>
+            </span>
+        </div>
+        <div class="status-center">
+            <div class="progress-bar-container">
+                <input type="range" id="progressBar" class="progress-bar" min="0" max="100" value="0">
+            </div>
+        </div>
+        <div class="status-right">
+            <span class="status-item">
+                <span class="status-label">开:</span>
+                <span class="status-value" id="openPrice">--</span>
+            </span>
+            <span class="status-item">
+                <span class="status-label">高:</span>
+                <span class="status-value up" id="highPrice">--</span>
+            </span>
+            <span class="status-item">
+                <span class="status-label">低:</span>
+                <span class="status-value down" id="lowPrice">--</span>
+            </span>
+            <span class="status-item">
+                <span class="status-label">收:</span>
+                <span class="status-value" id="closePrice">--</span>
+            </span>
+            <span class="status-item">
+                <span class="status-label">量:</span>
+                <span class="status-value" id="volumeValue">--</span>
+            </span>
+        </div>
+    </footer>
+
+    <!-- 通知提示 -->
+    <div id="notification" class="notification"></div>
+
+    <!-- 图表右键菜单 -->
+    <div id="chartContextMenu" class="ctx-menu" style="display:none;">
+        <div class="ctx-price" id="ctxPrice">--</div>
+        <button class="ctx-item" data-action="buy">市价买入 / 做多</button>
+        <button class="ctx-item" data-action="sell">市价卖出 / 做空</button>
+        <div class="ctx-divider"></div>
+        <button class="ctx-item" data-action="limit-long">在此价挂限价·多</button>
+        <button class="ctx-item" data-action="limit-short">在此价挂限价·空</button>
+        <button class="ctx-item" data-action="stop-long">在此价挂止损·多</button>
+        <button class="ctx-item" data-action="stop-short">在此价挂止损·空</button>
+    </div>
+
+    <!-- 脚本文件 -->
+    <script src="js/data.js?t=30"></script>
+    <script src="js/chart.js?t=30"></script>
+    <script src="js/replay.js?t=30"></script>
+    <script src="js/trading.js?t=30"></script>
+    <script src="js/stats.js?t=30"></script>
+    <script src="js/draw.js?t=30"></script>
+    <script src="js/app.js?t=30"></script>
+</body>
+</html>

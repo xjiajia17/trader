@@ -1,0 +1,1353 @@
+/* ========================================
+   K线回放 - 模拟交易练习
+   深色主题样式表
+   ======================================== */
+
+/* 重置与基础样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-primary: #0c0d0f;
+    --bg-secondary: #1e222d;
+    --bg-tertiary: #2a2e39;
+    --bg-hover: #363a45;
+    --border-color: #2a2e39;
+    --text-primary: #d1d4dc;
+    --text-secondary: #848e9c;
+    --text-tertiary: #5e6673;
+    --accent-primary: #2962ff;
+    --accent-primary-hover: #1e53e5;
+    --accent-primary-light: #4d8cff;
+    --buy-color: #0ecb81;
+    --buy-color-hover: #0bbf78;
+    --sell-color: #f6465d;
+    --sell-color-hover: #e53e55;
+    --warning-color: #f0b90b;
+    --success-color: #0ecb81;
+    --danger-color: #f6465d;
+    --panel-radius: 8px;
+    --button-radius: 6px;
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    user-select: none;
+}
+
+/* ========================================
+   顶部工具栏
+   ======================================== */
+.toolbar {
+    height: 56px;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 16px;
+    flex-shrink: 0;
+}
+
+.toolbar-left,
+.toolbar-center,
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.toolbar-center {
+    flex: 1;
+    justify-content: center;
+}
+
+.toolbar-right {
+    justify-content: flex-end;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.logo-icon {
+    font-size: 20px;
+}
+
+.logo-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.5px;
+}
+
+.divider {
+    width: 1px;
+    height: 24px;
+    background-color: var(--border-color);
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.toolbar-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.toolbar-select {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--button-radius);
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color var(--transition-fast);
+}
+
+.toolbar-select:hover {
+    border-color: var(--accent-primary);
+}
+
+.toolbar-select:focus {
+    border-color: var(--accent-primary);
+}
+
+/* 周期按钮 */
+.timeframe-buttons {
+    display: flex;
+    gap: 2px;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--button-radius);
+    padding: 2px;
+}
+
+.tf-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 5px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all var(--transition-fast);
+}
+
+.tf-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-hover);
+}
+
+.tf-btn.active {
+    background-color: var(--accent-primary);
+    color: #fff;
+}
+
+/* 回放控制 */
+.replay-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ctrl-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: var(--button-radius);
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.ctrl-btn:hover {
+    background-color: var(--bg-hover);
+    color: var(--accent-primary-light);
+}
+
+.ctrl-btn:active {
+    transform: scale(0.95);
+}
+
+.ctrl-btn.play-btn {
+    width: 44px;
+    height: 44px;
+    background-color: var(--accent-primary);
+    color: #fff;
+    font-size: 16px;
+}
+
+.ctrl-btn.play-btn:hover {
+    background-color: var(--accent-primary-hover);
+}
+
+/* 速度控制 */
+.speed-controls {
+    display: flex;
+    gap: 2px;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--button-radius);
+    padding: 2px;
+}
+
+.speed-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 5px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all var(--transition-fast);
+}
+
+.speed-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-hover);
+}
+
+.speed-btn.active {
+    background-color: var(--accent-primary);
+    color: #fff;
+}
+
+/* 均线开关 */
+.ma-toggles {
+    display: flex;
+    gap: 10px;
+}
+
+.ma-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.ma-toggle input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: var(--accent-primary);
+}
+
+.ma-label {
+    font-weight: 500;
+}
+
+/* ========================================
+   主内容区
+   ======================================== */
+.main-container {
+    display: flex;
+    height: calc(100vh - 56px - 36px);
+    overflow: hidden;
+}
+
+/* 图表区域 */
+.chart-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-primary);
+    min-width: 0;
+}
+
+.chart-container {
+    flex: 3;
+    min-height: 0;
+    position: relative;
+}
+
+.volume-container {
+    flex: 1;
+    min-height: 80px;
+    max-height: 180px;
+    position: relative;
+    border-top: 1px solid var(--border-color);
+}
+
+/* ========================================
+   右侧面板
+   ======================================== */
+.side-panel {
+    width: 320px;
+    background-color: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex-shrink: 0;
+}
+
+.side-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.side-panel::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+.side-panel::-webkit-scrollbar-thumb {
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+}
+
+.side-panel::-webkit-scrollbar-thumb:hover {
+    background: var(--bg-hover);
+}
+
+/* 面板通用样式 */
+.panel {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.panel-header {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.panel-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.panel-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.panel-body {
+    padding: 12px 16px;
+}
+
+/* 账户面板 */
+.account-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+}
+
+.account-row.highlight {
+    padding-top: 10px;
+    margin-top: 6px;
+    border-top: 1px solid var(--border-color);
+}
+
+.account-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.account-value {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.account-row.highlight .account-value {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.account-value.profit {
+    color: var(--buy-color);
+}
+
+.account-value.loss {
+    color: var(--sell-color);
+}
+
+/* 交易面板 */
+.current-price {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--button-radius);
+    margin-bottom: 12px;
+}
+
+.price-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.price-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.price-value.up {
+    color: var(--buy-color);
+}
+
+.price-value.down {
+    color: var(--sell-color);
+}
+
+/* 仓位信息 */
+.position-info {
+    padding: 10px;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--button-radius);
+    margin-bottom: 12px;
+}
+
+.position-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.position-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+}
+
+.position-value {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.position-value.editable {
+    cursor: pointer;
+    text-decoration: underline dotted;
+    text-decoration-color: var(--text-tertiary);
+}
+
+.position-value.editable:hover {
+    color: var(--accent-primary-light);
+}
+
+.position-row.pnl-row {
+    padding-top: 8px;
+    margin-top: 6px;
+    border-top: 1px solid var(--border-color);
+}
+
+.pnl-value {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.pnl-value.profit {
+    color: var(--buy-color);
+}
+
+.pnl-value.loss {
+    color: var(--sell-color);
+}
+
+/* 交易输入 */
+.trade-inputs {
+    margin-bottom: 12px;
+}
+
+.input-group {
+    margin-bottom: 10px;
+}
+
+/* 数量模式切换（手数 / 金额） */
+.size-mode-toggle {
+    display: flex;
+    gap: 0;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--button-radius);
+    padding: 2px;
+}
+
+.size-mode-btn {
+    flex: 1;
+    padding: 6px 8px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all var(--transition-fast);
+}
+
+.size-mode-btn:hover {
+    color: var(--text-primary);
+}
+
+.size-mode-btn.active {
+    background-color: var(--accent-primary);
+    color: #fff;
+}
+
+/* 输入辅助提示 */
+.input-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 10px;
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+}
+
+.input-group label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.input-group input,
+.input-group select {
+    width: 100%;
+    padding: 8px 10px;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--button-radius);
+    color: var(--text-primary);
+    font-size: 12px;
+    outline: none;
+    transition: border-color var(--transition-fast);
+}
+
+.input-group input:hover,
+.input-group select:hover {
+    border-color: var(--bg-hover);
+}
+
+.input-group input:focus,
+.input-group select:focus {
+    border-color: var(--accent-primary);
+}
+
+.input-group.inline {
+    display: flex;
+    gap: 8px;
+}
+
+.input-half {
+    flex: 1;
+}
+
+/* 交易按钮 */
+.trade-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.trade-btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: var(--button-radius);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.trade-btn:active {
+    transform: scale(0.98);
+}
+
+.buy-btn {
+    background-color: var(--buy-color);
+    color: #fff;
+}
+
+.buy-btn:hover {
+    background-color: var(--buy-color-hover);
+}
+
+.buy-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.sell-btn {
+    background-color: var(--sell-color);
+    color: #fff;
+}
+
+.sell-btn:hover {
+    background-color: var(--sell-color-hover);
+}
+
+.sell-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.close-btn {
+    background-color: var(--warning-color);
+    color: #000;
+}
+
+.close-btn:hover {
+    background-color: #e5ac0a;
+}
+
+/* 统计面板 */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.stat-item {
+    padding: 8px;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--button-radius);
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+    font-size: 10px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+/* 收益曲线小图 */
+.equity-chart-container {
+    margin-top: 8px;
+}
+
+.equity-chart-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.equity-chart {
+    height: 80px;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--button-radius);
+    overflow: hidden;
+}
+
+/* 交易历史 */
+.history-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+}
+
+.history-panel .panel-body {
+    flex: 1;
+    overflow: hidden;
+    padding: 0;
+}
+
+.history-body {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.history-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.history-body::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+.history-body::-webkit-scrollbar-thumb {
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+}
+
+.history-table {
+    min-width: 100%;
+}
+
+.history-header {
+    display: flex;
+    padding: 8px 12px;
+    background-color: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    font-size: 10px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-transform: uppercase;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.history-header span {
+    flex: 1;
+    text-align: center;
+}
+
+.history-header span:first-child {
+    text-align: left;
+    flex: 1.5;
+}
+
+.history-list {
+    padding: 4px 0;
+}
+
+.history-item {
+    display: flex;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 11px;
+    align-items: center;
+    transition: background-color var(--transition-fast);
+}
+
+.history-item:hover {
+    background-color: var(--bg-tertiary);
+}
+
+.history-item span {
+    flex: 1;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.history-item .history-time {
+    text-align: left;
+    flex: 1.5;
+    color: var(--text-secondary);
+    font-size: 10px;
+}
+
+.history-item .history-side {
+    font-weight: 600;
+}
+
+.history-item .history-side.long {
+    color: var(--buy-color);
+}
+
+.history-item .history-side.short {
+    color: var(--sell-color);
+}
+
+.history-item .history-pnl {
+    font-weight: 600;
+}
+
+.history-item .history-pnl.profit {
+    color: var(--buy-color);
+}
+
+.history-item .history-pnl.loss {
+    color: var(--sell-color);
+}
+
+.history-empty {
+    padding: 30px;
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 12px;
+}
+
+/* ========================================
+   底部状态栏
+   ======================================== */
+.statusbar {
+    height: 36px;
+    background-color: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 16px;
+    flex-shrink: 0;
+}
+
+.status-left,
+.status-right {
+    display: flex;
+    gap: 16px;
+    flex-shrink: 0;
+}
+
+.status-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.status-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+}
+
+.status-label {
+    color: var(--text-secondary);
+}
+
+.status-value {
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+
+.status-value.up {
+    color: var(--buy-color);
+}
+
+.status-value.down {
+    color: var(--sell-color);
+}
+
+/* 进度条 */
+.progress-bar-container {
+    width: 100%;
+    max-width: 600px;
+    padding: 0 10px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--bg-tertiary);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+.progress-bar::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+}
+
+.progress-bar::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.progress-bar::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    cursor: pointer;
+    border: none;
+}
+
+/* ========================================
+   通知提示
+   ======================================== */
+.notification {
+    position: fixed;
+    top: 70px;
+    right: 340px;
+    padding: 12px 20px;
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--button-radius);
+    color: var(--text-primary);
+    font-size: 13px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    transition: all var(--transition-normal);
+    max-width: 300px;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.notification.success {
+    border-left: 3px solid var(--buy-color);
+}
+
+.notification.error {
+    border-left: 3px solid var(--sell-color);
+}
+
+.notification.warning {
+    border-left: 3px solid var(--warning-color);
+}
+
+.notification.info {
+    border-left: 3px solid var(--accent-primary);
+}
+
+/* ========================================
+   响应式布局
+   ======================================== */
+@media (max-width: 1200px) {
+    .side-panel {
+        width: 280px;
+    }
+    
+    .toolbar {
+        padding: 0 10px;
+        gap: 10px;
+    }
+    
+    .ma-toggles {
+        gap: 6px;
+    }
+    
+    .ma-toggle {
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 900px) {
+    .main-container {
+        flex-direction: column;
+    }
+    
+    .side-panel {
+        width: 100%;
+        height: 40%;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+    }
+    
+    .toolbar-right {
+        display: none;
+    }
+    
+    .notification {
+        right: 20px;
+        left: 20px;
+        max-width: none;
+    }
+}
+
+/* ========================================
+   动画效果
+   ======================================== */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.pulse {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+}
+
+/* ========================================
+   KDJ 参数 / 点差 / 买卖价 样式
+   ======================================== */
+
+.kdj-params {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.kdj-params input {
+    width: 36px;
+    height: 24px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    color: var(--text-primary);
+    text-align: center;
+    font-size: 11px;
+    font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.kdj-params input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+
+.kdj-sep {
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
+.spread-display {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-family: 'SF Mono', 'Monaco', monospace;
+    padding: 2px 8px;
+    background: var(--bg-tertiary);
+    border-radius: 3px;
+}
+
+.bid-ask-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    padding: 4px 0;
+    font-size: 11px;
+}
+
+.bid-label, .ask-label {
+    color: var(--text-tertiary);
+    font-size: 10px;
+}
+
+.bid-value {
+    color: var(--sell-color);
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.ask-value {
+    color: var(--buy-color);
+    font-family: 'SF Mono', 'Monaco', monospace;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* 提示：可拖动止损止盈线 */
+.chart-container {
+    cursor: crosshair;
+}
+
+/* 画图 overlay 层 */
+.draw-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 50;
+    pointer-events: none;
+}
+
+/* 图表右键菜单 */
+.ctx-menu {
+    position: fixed;
+    z-index: 2000;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--button-radius);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+    padding: 4px;
+    min-width: 168px;
+}
+
+.ctx-price {
+    padding: 6px 10px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 4px;
+    font-variant-numeric: tabular-nums;
+}
+
+.ctx-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 7px 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background var(--transition-fast);
+}
+
+.ctx-item:hover {
+    background: var(--bg-hover);
+}
+
+.ctx-divider {
+    height: 1px;
+    background: var(--border-color);
+    margin: 4px 0;
+}
+
+/* 画图工具栏 */
+.draw-tools {
+    display: flex;
+    gap: 2px;
+    background-color: var(--bg-tertiary);
+    border-radius: var(--button-radius);
+    padding: 2px;
+}
+
+.draw-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.draw-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-hover);
+}
+
+.draw-btn.active {
+    background-color: var(--accent-primary);
+    color: #fff;
+}
+
+/* 跟随最新K线按钮 */
+.follow-btn {
+    font-size: 16px;
+}
+
+.follow-btn.active {
+    background-color: var(--accent-primary);
+    color: #fff;
+}
+
+/* ========================================
+   持仓价格标签（入场/止损/止盈，TradingView风格）
+   定位在图表左侧，价格轴在右侧，互不遮挡
+   ======================================== */
+
+.position-labels {
+    position: absolute;
+    z-index: 100;
+    inset: 0;
+    pointer-events: none; /* 容器不拦截鼠标，区域内线条仍可拖动 */
+}
+
+.pl-tag {
+    position: absolute;
+    left: 6px;
+    transform: translateY(-50%);
+    font-size: 10px;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Monaco', monospace;
+    padding: 3px 7px;
+    border-radius: 3px;
+    line-height: 1;
+    white-space: nowrap;
+    /* 不透明底色：避免价格线穿过标签框（背景色由各标签单独指定） */
+    background: var(--bg-primary);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.85), 0 1px 3px rgba(0, 0, 0, 0.6);
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+/* 入场标签：不可交互，展示入场价 */
+.entry-tag {
+    pointer-events: none;
+    color: #f0b90b;
+    /* 不透明深金底（原半透明会让价格线透出） */
+    background: #352C0E;
+    border: 1px solid #f0b90b;
+}
+
+/* 止损标签：可拖动设置价格，可点击切换 */
+.sl-tag {
+    pointer-events: auto;
+    cursor: ns-resize;
+    color: #f6465d;
+    background: #36171D;
+    border: 1px dashed #f6465d;
+}
+
+.sl-tag:hover {
+    background: #f6465d;
+    color: #fff;
+    border-style: solid;
+}
+
+.sl-tag.active {
+    background: #471B23;
+    border-style: solid;
+}
+
+/* 止盈标签：可拖动设置价格，可点击切换 */
+.tp-tag {
+    pointer-events: auto;
+    cursor: ns-resize;
+    color: #0ecb81;
+    background: #0C2A20;
+    border: 1px dashed #0ecb81;
+}
+
+.tp-tag:hover {
+    background: #0ecb81;
+    color: #fff;
+    border-style: solid;
+}
+
+.tp-tag.active {
+    background: #0D3D2C;
+    border-style: solid;
+}
+
+/* 订单类型切换 */
+.order-type-tabs {
+    display: flex;
+    gap: 4px;
+    margin: 8px 0;
+}
+
+.order-tab {
+    flex: 1;
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.order-tab:hover {
+    border-color: var(--text-secondary);
+}
+
+.order-tab.active {
+    background: var(--accent-color);
+    color: #fff;
+    border-color: var(--accent-color);
+}
+
+/* 挂单列表 */
+.pending-orders {
+    margin-top: 8px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 8px;
+}
+
+.pending-header {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pending-order-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 6px;
+    margin-bottom: 3px;
+    background: var(--bg-secondary);
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+.pending-order-item .po-type {
+    font-weight: 600;
+    padding: 1px 4px;
+    border-radius: 2px;
+}
+
+.pending-order-item .po-type.limit {
+    color: #2962ff;
+    background: rgba(41, 98, 255, 0.15);
+}
+
+.pending-order-item .po-type.stop {
+    color: #f5a623;
+    background: rgba(245, 166, 35, 0.15);
+}
+
+.pending-order-item .po-side.long {
+    color: var(--buy-color);
+}
+
+.pending-order-item .po-side.short {
+    color: var(--sell-color);
+}
+
+.pending-cancel-btn {
+    background: none;
+    border: 1px solid var(--sell-color);
+    color: var(--sell-color);
+    border-radius: 2px;
+    padding: 1px 6px;
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.pending-cancel-btn:hover {
+    background: var(--sell-color);
+    color: #fff;
+}
